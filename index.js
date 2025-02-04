@@ -1,12 +1,16 @@
 const express=require('express');
-const users=require('./MOCK_DATA.json')
+const fs=require('fs');
+const users=require('./MOCK_DATA.json');
+const { json } = require('stream/consumers');
 
 const app=express();
 
 const PORT=8000;
 
+//middleware-plugin
+app.use(express.urlencoded({extended:false}));
+
 //Routes
-//REST API
 app.get('/users', (req, res) => {
     const html=`
     <ul>
@@ -16,7 +20,14 @@ app.get('/users', (req, res) => {
     try {
         return res.send(html);
     } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
+        return res.json({ error: "Internal server error" });
+    }
+});
+app.get('/api/users', (req, res) => {
+    try {
+        return res.json(users);
+    } catch (error) {
+        return res.json({ error: "Internal server error" });
     }
 });
 
@@ -26,38 +37,62 @@ app.route('/api/users/:id').get((req, res) => {
     try {
         return res.json(user);
     } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
+        return res.json({ error: "Internal server error" });
     }
 }).put((req,res)=>{
-    //TODO:create user with ID
-    try {
-        return res.json({status:"pending"});
-    } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+    const userId = parseInt(req.params.id);
+    const userIndex = users.findIndex(user => user.id === userId);
+
+    const body = req.body;
+
+    users[userIndex] = { ...users[userIndex], ...body };
+
+    fs.writeFile('./MOCK_DATA.json', JSON.stringify(users), (err) => {
+        if (err) {
+            return res.json({ error: "Error writing to file" });
+        }
+        return res.json({ status: "Success", updatedUser: users[userIndex] });
+    });
 }).patch((req,res)=>{
-    //TODO:Edit the user with id 
-    try {
-        return res.json({status:"pending"});
-    } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+    const userId = parseInt(req.params.id);
+    const userIndex = users.findIndex(user => user.id === userId);
+
+    const body = req.body;
+
+    users[userIndex] = { ...users[userIndex], ...body };
+
+    fs.writeFile('./MOCK_DATA.json', JSON.stringify(users), (err) => {
+        if (err) {
+            return res.json({ error: "Error writing to file" });
+        }
+        return res.json({ status: "Success", updatedUser: users[userIndex] });
+    });
 }).delete((req,res)=>{
-    //TODO:Delete the user with id 
-    try {
-        return res.json({status:"pending"});
-    } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+    const userId = parseInt(req.params.id);  
+    const userIndex = users.findIndex(user => user.id === userId);  
+
+    users.splice(userIndex, 1); 
+
+    fs.writeFile('./MOCK_DATA.json', JSON.stringify(users), (err) => {
+        if (err) { 
+            return res.json({ error: "Error writing to file" });
+        }
+        return res.json({ status: "Success", message: "User deleted" });  
+    });
 })
 
-app.post('./api/users',(req,res)=>{
-    //TODO:create new user
-    try {
-        return res.json({status:"pending"});
-    } catch (error) {
-        return res.status(500).json({ error: "Internal server error" });
-    }
+app.post('/api/users', (req, res) => {
+    const body = req.body;
+    users.push({ ...body, id: users.length + 1 });
+
+    fs.writeFile('./MOCK_DATA.json', JSON.stringify(users), (err, data) => {
+        try {
+            return res.json({status:"Success",id:users.length});
+        } catch (error) {
+            return res.json({ error: "Error parsing JSON" });
+        }
+    });
 });
+
 
 app.listen(8000,(req,res)=>console.log(`Server started at PORT:${PORT}`));
