@@ -5,7 +5,7 @@ const { json } = require('stream/consumers');
 
 const app=express();
 
-const PORT=8001;
+const PORT=8000;
 
 //middleware-plugin
 app.use(express.urlencoded({extended:false}));
